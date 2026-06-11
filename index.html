@@ -705,8 +705,7 @@ async function sendNotif(msg){
 async function loadNotifs(){
   const { data } = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(20);
   document.getElementById('notif-list').innerHTML = (data||[]).map(n=>`
-    <div class="notif">${n.message}<div class="sm" style="margin-top:4px">${new Date(n.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</div></div>
-  `).join('') || '<div class="loading">No updates yet</div>';
+    <div class="notif">${n.message.replace(/(https?:\/\/\S+)/g,'<a href="$1" target="_blank" style="color:#1d4ed8;font-weight:600">📎 Open Link</a>')}<div  `).join('') || '<div class="loading">No updates yet</div>';
 }
 
 // ─── STUDENTS ────────────────────────────────────────────────────────────────

@@ -574,14 +574,14 @@ function renderParent(){
     const paid = paidOf(s.id), due = FEE - paid;
     const [rcls,rlbl] = readiness(s);
     // Bus info for parent
-    const busBlock = s.buses
+    const bus = BUSES.find(b => b.id === s.bus_id);
+const busBlock = bus
       ? `<div class="card" style="border-left:4px solid #1d4ed8">
           <h3>🚌 Bus Details</h3>
-          <div class="srow"><div class="name">Bus Number</div><div class="right"><span class="pill info">${s.buses.bus_number}</span></div></div>
-          ${s.seat_number?`<div class="srow"><div class="name">Seat Number</div><div class="right"><span class="seat-badge">Seat ${s.seat_number}</span></div></div>`:''}
-          ${s.buses.driver_name?`<div class="srow"><div class="name">Driver</div><div class="right sm">${s.buses.driver_name}${s.buses.driver_phone?' · 📞 '+s.buses.driver_phone:''}</div></div>`:''}
-          ${s.buses.teacher_incharge?`<div class="srow"><div class="name">Teacher In-charge</div><div class="right sm">${s.buses.teacher_incharge}</div></div>`:''}
-        </div>`
+          ${bus.bus_number}
+${bus.driver_name}
+${bus.driver_phone}
+${bus.teacher_incharge}        </div>`
       : `<div class="card" style="border-left:4px solid #94a3b8">
           <h3>🚌 Bus Details</h3>
           <div class="sm" style="padding:8px 0">Bus allocation abhi nahi hui hai. School se confirm karein.</div>
@@ -596,7 +596,7 @@ function renderParent(){
         <span class="chip">🩸 ${s.blood_group||'–'}</span>
         <span class="chip">${isPresent(s.id)?'✅ Present':'⏳ Not marked'}</span>
         <span class="chip">${s.consent_given?'📝 Consent ✓':'📝 Consent pending'}</span>
-        ${s.buses?`<span class="chip">🚌 Bus ${s.buses.bus_number}</span>`:''}
+        ${bus?`<span class="chip">🚌 Bus ${bus.bus_number}</span>`:''}
       </div>
     </div>
     <div class="card" style="text-align:center">

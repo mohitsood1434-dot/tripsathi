@@ -315,7 +315,12 @@ async function loadAll(){
   const { data: trips } = await db.from('trips').select('*').limit(1);
   TRIP = trips && trips[0];
 
-  const { data: s } = await db.from('students').select('*, buses(bus_number, driver_name, driver_phone, teacher_incharge)').order('full_name');
+  const { data: s, error: studentError } = await db
+  .from('students')
+  .select('*')
+  .order('full_name');
+
+console.log('Students Error:', studentError);
   STUDENTS = s || [];
 
   const { data: p } = await db.from('payments').select('*');

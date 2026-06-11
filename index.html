@@ -124,6 +124,8 @@
     </div>
     <div class="card">
       <h3>📢 Send Trip Update to Parents</h3>
+     <input id="custom-msg" placeholder="Type custom update or paste link..." style="width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px">
+<button class="btn small" style="background:#0f766e" onclick="sendNotif(document.getElementById('custom-msg').value)">📨 Send Custom Update</button>
       <button class="btn small" onclick="sendNotif('Bus departed from school 🚌')">🚌 Bus Departed</button>
       <button class="btn small green" onclick="sendNotif('Reached safely, all students are fine ✅')">✅ Reached Safely</button>
       <button class="btn small" style="background:#7c3aed" onclick="sendNotif('Dinner done, lights off at 10 PM 🌙')">🌙 Good Night</button>

@@ -479,7 +479,7 @@ function renderBusPage(){
 
   // Bus-wise student list
   if(!BUSES.length){
-    document.getElementById('bus-alloc-list').innerHTML = '<div class="loading">Koi bus nahi hai abhi. Upar add karo.</div>';
+    document.getElementById('bus-alloc-list').innerHTML = '<div class="loading">No buses added yet. Add one above.</div>';
     return;
   }
 
@@ -559,7 +559,7 @@ async function addRoom(){
   const cap = parseInt(document.getElementById('r-cap').value) || 4;
 
   if(!room){
-    toast('Room number enter karo');
+    toast('Please enter a room number');
     return;
   }
 
@@ -573,14 +573,14 @@ async function assignBus(){
   const sid = document.getElementById('ba-student').value;
   const bid = document.getElementById('ba-bus').value;
   const seat = document.getElementById('ba-seat').value.trim();
-  if(!sid || !bid){ toast('⚠️ Student aur bus dono select karo!'); return; }
+  if(!sid || !bid){ toast('⚠️ Please select both student and bus!'); return; }
 
   // Check capacity
   const bus = BUSES.find(b=>b.id===bid);
   const current = STUDENTS.filter(s=>s.bus_id===bid).length;
   const isReassign = STUDENTS.find(s=>s.id===sid)?.bus_id === bid;
   if(!isReassign && bus && current >= bus.capacity){
-    toast(`⚠️ Bus ${bus.bus_number} full hai! (${bus.capacity}/${bus.capacity} seats)`);
+    toast(`⚠️ Bus ${bus.bus_number} is full! (${bus.capacity}/${bus.capacity} seats)`);
     return;
   }
 
@@ -623,7 +623,7 @@ ${bus.driver_phone}
 ${bus.teacher_incharge}        </div>`
       : `<div class="card" style="border-left:4px solid #94a3b8">
           <h3>🚌 Bus Details</h3>
-          <div class="sm" style="padding:8px 0">Bus allocation abhi nahi hui hai. School se confirm karein.</div>
+          <div class="sm" style="padding:8px 0">Bus allocation pending. Please confirm with the school.</div>
         </div>`;
 
     return `
@@ -642,7 +642,7 @@ ${bus.teacher_incharge}        </div>`
       <div class="sm" style="font-weight:700;margin-bottom:6px">Trip Readiness Status</div>
       <span class="pill ${rcls}" style="font-size:13px;padding:6px 14px">${rlbl}</span>
       ${!s.consent_given ? `<button class="btn" onclick="printConsent('${s.id}')">🖨️ Print Consent Form</button>
-      <div class="sm" style="margin-top:8px">Print karein, sign karein, phir neeche photo upload karein.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
+      <div class="sm" style="margin-top:8px">Print, Sign, and upload a photo below.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
     </div>
     ${busBlock}
     <div class="card">

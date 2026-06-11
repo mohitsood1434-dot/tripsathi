@@ -203,7 +203,7 @@
     <label>Capacity</label>
     <input id="r-cap" type="number" placeholder="4">
 
-    <button class="btn">+ Add Room</button>
+    <button class="btn" onclick="addRoom()">+ Add Room</button>
   </div>
 
   <div class="card">
@@ -549,7 +549,21 @@ async function addBus(){
   toast('🚌 Bus added successfully!');
   loadAll();
 }
+async function addRoom(){
+  const room = document.getElementById('r-num').value.trim();
+  const cap = parseInt(document.getElementById('r-cap').value) || 4;
 
+  if(!room){
+    toast('Room number enter karo');
+    return;
+  }
+
+  document.getElementById('room-list').innerHTML +=
+    `<div class="card">${room} (${cap} beds)</div>`;
+
+  document.getElementById('r-num').value='';
+  toast('Room added successfully!');
+}
 async function assignBus(){
   const sid = document.getElementById('ba-student').value;
   const bid = document.getElementById('ba-bus').value;

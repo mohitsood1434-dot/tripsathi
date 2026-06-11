@@ -102,7 +102,7 @@
       <div class="stat"><div class="v" id="st-consent">–</div><div class="l">Consent Done</div></div>
       <div class="stat"><div class="v" id="st-present">–</div><div class="l">Present (Departure)</div></div>
       <div class="stat"><div class="v" id="st-ready" style="color:#059669">–</div><div class="l">🟢 Trip Ready</div></div>
-      <div class="stat"><div class="v" id="st-medical" style="color:#dc2626">–</div><div class="l">⚕️ Medical Cases</div></div>
+      <div class="stat"><div class="v" id="st-medical" style="color:#dc2626">–</div><div class="l">⚕ Medical Cases</div></div>
     </div>
     <div class="card" id="medical-card" style="display:none">
       <h3>⚕️ Medical Alert Dashboard</h3>
@@ -239,7 +239,7 @@ async function init(){
 function buildTabs(){
   const isAdmin = PROFILE.role==='admin';
   const tabs = isAdmin
-    ? [['dash','🏠','Home'],['students','👨','Students'],['att','✅','Attendance'],['pay','💳','Payments'],['notif','🔔','Updates']]
+    ? [['dash','🏠','Home'],['students','👨‍🎓','Students'],['att','✅','Attendance'],['pay','💳','Payments'],['notif','🔔','Updates']]
     : [['mychild','👧','My Child'],['notif','🔔','Updates']];
   document.getElementById('tabbar').innerHTML = tabs.map(([id,ico,label],i)=>
     `<button class="tab ${i===0?'active':''}" onclick="go('${id}',this)"><span class="ico">${ico}</span>${label}</button>`).join('');
@@ -268,7 +268,7 @@ async function loadAll(){
 function paidOf(id){ return PAYMENTS.filter(x=>x.student_id===id).reduce((s,x)=>s+Number(x.amount),0); }
 function isPresent(id){ return ATTENDANCE.some(x=>x.student_id===id && x.status==='present'); }
 
-// Student Readiness System (PDF requirement): auto-check Consent + Payment + Aadhaar
+// Student Readiness System: auto-check Consent + Payment + Aadhaar
 function readiness(s){
   const checks = [ !!s.consent_given, paidOf(s.id) >= FEE, !!s.aadhaar_url ];
   const done = checks.filter(Boolean).length;
@@ -318,23 +318,22 @@ function renderAdmin(){
         <div class="name">${s.full_name}</div>
         <div class="sm">${s.class_section} · ${s.blood_group||''} · 📞 ${s.parent_phone}</div>
         <div class="sm">✉️ ${s.parent_email || '<span style="color:#dc2626">parent email missing!</span>'} · ${s.consent_given?'📝 Consent ✓':'📝 No consent'}</div>
-        <div class="sm">${s.aadhaar_url?`<a onclick="viewDoc('${s.aadhaar_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📄 View Aadhaar</a>`:'📄 Aadhaar ✗'} · ${s.photo_url?`<a onclick="viewDoc('${s.photo_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">🖼️ View Photo</a>`:'🖼️ Photo ✗'}</div>
+        <div class="sm">${s.aadhaar_url?`<a onclick="viewDoc('${s.aadhaar_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📄 View Aadhaar</a>`:'📄 Aadhaar ✗'} · ${s.consent_url?`<a onclick="viewDoc('${s.consent_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📝 View Consent Form</a>`:'📝 Consent Form ✗'}</div>
         ${s.medical_notes?'<div class="medical">⚕️ '+s.medical_notes+'</div>':''}
       </div>
       <div class="right"><span class="pill ${cls}">${lbl}</span></div>
     </div>`;
   }).join('') || '<div class="loading">No students yet — add one above!</div>';
 
-  // Pending Documents Tracker (PDF requirement)
-  const pending = STUDENTS.filter(s => !s.consent_given || !s.aadhaar_url || !s.photo_url);
+  // Pending Documents Tracker
+  const pending = STUDENTS.filter(s => !s.consent_url || !s.aadhaar_url);
   document.getElementById('pending-card').style.display = pending.length ? 'block' : 'none';
   document.getElementById('pending-list').innerHTML = pending.map(s=>`
     <div class="srow">
       <div><div class="name">${s.full_name}</div><div class="sm">${s.class_section} · 📞 ${s.parent_phone}</div></div>
       <div class="right">
-        ${!s.consent_given?'<span class="pill bad">Consent</span> ':''}
-        ${!s.aadhaar_url?'<span class="pill warn">Aadhaar</span> ':''}
-        ${!s.photo_url?'<span class="pill warn">Photo</span>':''}
+        ${!s.consent_url?'<span class="pill bad">Consent Form</span> ':''}
+        ${!s.aadhaar_url?'<span class="pill warn">Aadhaar</span>':''}
       </div>
     </div>`).join('');
 
@@ -378,8 +377,8 @@ function renderParent(){
     <div class="card" style="text-align:center">
       <div class="sm" style="font-weight:700;margin-bottom:6px">Trip Readiness Status</div>
       <span class="pill ${rcls}" style="font-size:13px;padding:6px 14px">${rlbl}</span>
-      ${!s.consent_given ? `<button class="btn green" onclick="giveConsent('${s.id}')">📝 Give Digital Consent</button>
-      <div class="sm" style="margin-top:8px">By tapping above, you give consent for your child to attend this trip.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
+      ${!s.consent_given ? `<button class="btn" onclick="printConsent('${s.id}')">🖨️ Print Consent Form</button>
+      <div class="sm" style="margin-top:8px">Print karein, sign karein, phir neeche photo upload karein.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
     </div>
     <div class="card">
       <h3>📁 Documents Upload</h3>
@@ -388,8 +387,8 @@ function renderParent(){
         <div class="right"><button class="btn small" onclick="pickDoc('${s.id}','aadhaar')">${s.aadhaar_url?'Re-upload':'Upload'}</button></div>
       </div>
       <div class="srow">
-        <div><div class="name">🖼️ Student Photo</div><div class="sm">${s.photo_url?'<span style="color:#059669;font-weight:700">✅ Uploaded</span>':'<span style="color:#dc2626">❌ Not uploaded</span>'}</div></div>
-        <div class="right"><button class="btn small" onclick="pickDoc('${s.id}','photo')">${s.photo_url?'Re-upload':'Upload'}</button></div>
+        <div><div class="name">📝 Signed Consent Form</div><div class="sm">${s.consent_url?'<span style="color:#059669;font-weight:700">✅ Uploaded</span>':'<span style="color:#dc2626">❌ Not uploaded</span>'}</div></div>
+        <div class="right"><button class="btn small green" onclick="pickDoc('${s.id}','consent')">${s.consent_url?'Re-upload':'Upload'}</button></div>
       </div>
       <div class="sm" style="margin-top:8px">Photo ya PDF, max 5 MB</div>
     </div>
@@ -457,12 +456,27 @@ async function sendNotif(msg){
   loadNotifs();
 }
 
-async function giveConsent(sid){
-  if(!confirm('I give my consent for my child to attend this school trip. Confirm?')) return;
-  const { error } = await db.from('students').update({ consent_given: true, consent_at: new Date().toISOString() }).eq('id', sid);
-  if(error){ toast('❌ '+error.message); return; }
-  toast('✅ Consent submitted — thank you!');
-  loadAll();
+function printConsent(sid){
+  const s = STUDENTS.find(x=>x.id===sid);
+  if(!s) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Consent Form</title>
+  <style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:20px;line-height:1.9;color:#111}
+  h1{text-align:center;font-size:22px;margin-bottom:0} h2{text-align:center;font-size:15px;font-weight:normal;margin-top:4px;border-bottom:2px solid #1e3a8a;padding-bottom:14px}
+  .row{margin:10px 0} .blank{display:inline-block;border-bottom:1px solid #111;min-width:200px}
+  .sign{margin-top:60px;display:flex;justify-content:space-between}
+  .sign div{border-top:1px solid #111;padding-top:6px;width:40%;text-align:center;font-size:13px}</style></head><body>
+  <h1>🚌 TripSathi — Parental Consent Form</h1>
+  <h2>School Trip Management System</h2>
+  <div class="row"><b>Trip:</b> ${TRIP?TRIP.name:'________________'} &nbsp;&nbsp; <b>Destination:</b> ${TRIP?TRIP.destination:'________'}</div>
+  <div class="row"><b>Dates:</b> ${TRIP?TRIP.start_date+' to '+TRIP.end_date:'________________'}</div>
+  <div class="row"><b>Student Name:</b> ${s.full_name} &nbsp;&nbsp; <b>Class:</b> ${s.class_section}</div>
+  <div class="row"><b>Blood Group:</b> ${s.blood_group||'____'} &nbsp;&nbsp; <b>Parent Contact:</b> ${s.parent_phone}</div>
+  <p style="margin-top:24px">I, <span class="blank"></span>, parent/guardian of <b>${s.full_name}</b>, hereby give my full consent for my child to participate in the above-mentioned school trip. I confirm that the medical information provided to the school is accurate, and I authorise the accompanying staff to take necessary action in case of a medical emergency.</p>
+  <div class="sign"><div>Parent/Guardian Signature</div><div>Date</div></div>
+  <p style="margin-top:50px;font-size:11px;color:#666;text-align:center">After signing, please take a clear photo of this form and upload it in the TripSathi app → My Child → Documents Upload → Signed Consent Form.</p>
+  <script>window.print()<\/script></body></html>`);
+  w.document.close();
 }
 
 let DOC_CTX = null;
@@ -477,10 +491,12 @@ async function uploadDoc(ev){
   const path = DOC_CTX.sid + '/' + DOC_CTX.type + '.' + ext;
   const { error } = await db.storage.from('documents').upload(path, file, { upsert: true });
   if(error){ toast('❌ '+error.message); ev.target.value=''; return; }
-  const field = DOC_CTX.type === 'aadhaar' ? 'aadhaar_url' : 'photo_url';
-  const { error: e2 } = await db.from('students').update({ [field]: path }).eq('id', DOC_CTX.sid);
+  const updates = {};
+  if(DOC_CTX.type === 'aadhaar') updates.aadhaar_url = path;
+  else { updates.consent_url = path; updates.consent_given = true; updates.consent_at = new Date().toISOString(); }
+  const { error: e2 } = await db.from('students').update(updates).eq('id', DOC_CTX.sid);
   if(e2){ toast('❌ '+e2.message); ev.target.value=''; return; }
-  toast('✅ Document uploaded successfully!');
+  toast(DOC_CTX.type==='consent' ? '✅ Consent form uploaded — consent marked ✓' : '✅ Document uploaded successfully!');
   ev.target.value = '';
   DOC_CTX = null;
   loadAll();

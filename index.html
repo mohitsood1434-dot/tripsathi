@@ -128,6 +128,10 @@
       <label>Medical Notes (optional)</label><input id="f-medical" placeholder="e.g. Dust allergy">
       <button class="btn" onclick="addStudent()">Register Student</button>
     </div>
+    <div class="card" id="pending-card" style="display:none">
+      <h3>📋 Pending Documents Tracker</h3>
+      <div id="pending-list"></div>
+    </div>
     <div class="card"><h3>👨‍🎓 All Students</h3><div id="student-list" class="loading">Loading...</div></div>
   </div>
 
@@ -164,6 +168,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<input type="file" id="doc-file" accept="image/*,.pdf" style="display:none" onchange="uploadDoc(event)">
 
 <script>
 const SUPABASE_URL = "https://avwsfqcgnmqwubbfmqpd.supabase.co";
@@ -234,7 +239,7 @@ async function init(){
 function buildTabs(){
   const isAdmin = PROFILE.role==='admin';
   const tabs = isAdmin
-    ? [['dash','🏠','Home'],['students','👨‍🎓','Students'],['att','✅','Attendance'],['pay','💳','Payments'],['notif','🔔','Updates']]
+    ? [['dash','🏠','Home'],['students','👨','Students'],['att','✅','Attendance'],['pay','💳','Payments'],['notif','🔔','Updates']]
     : [['mychild','👧','My Child'],['notif','🔔','Updates']];
   document.getElementById('tabbar').innerHTML = tabs.map(([id,ico,label],i)=>
     `<button class="tab ${i===0?'active':''}" onclick="go('${id}',this)"><span class="ico">${ico}</span>${label}</button>`).join('');
@@ -263,12 +268,12 @@ async function loadAll(){
 function paidOf(id){ return PAYMENTS.filter(x=>x.student_id===id).reduce((s,x)=>s+Number(x.amount),0); }
 function isPresent(id){ return ATTENDANCE.some(x=>x.student_id===id && x.status==='present'); }
 
-// Student Readiness System (PDF requirement): Green = Ready, Yellow = Pending, Red = Not Eligible
+// Student Readiness System (PDF requirement): auto-check Consent + Payment + Aadhaar
 function readiness(s){
-  const fullyPaid = paidOf(s.id) >= FEE;
-  const consent = !!s.consent_given;
-  if(consent && fullyPaid) return ['ok','🟢 Ready'];
-  if(consent || paidOf(s.id) > 0) return ['warn','🟡 Pending'];
+  const checks = [ !!s.consent_given, paidOf(s.id) >= FEE, !!s.aadhaar_url ];
+  const done = checks.filter(Boolean).length;
+  if(done === 3) return ['ok','🟢 Ready'];
+  if(done > 0) return ['warn','🟡 Pending'];
   return ['bad','🔴 Not Eligible'];
 }
 
@@ -313,11 +318,25 @@ function renderAdmin(){
         <div class="name">${s.full_name}</div>
         <div class="sm">${s.class_section} · ${s.blood_group||''} · 📞 ${s.parent_phone}</div>
         <div class="sm">✉️ ${s.parent_email || '<span style="color:#dc2626">parent email missing!</span>'} · ${s.consent_given?'📝 Consent ✓':'📝 No consent'}</div>
+        <div class="sm">${s.aadhaar_url?`<a onclick="viewDoc('${s.aadhaar_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📄 View Aadhaar</a>`:'📄 Aadhaar ✗'} · ${s.photo_url?`<a onclick="viewDoc('${s.photo_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">🖼️ View Photo</a>`:'🖼️ Photo ✗'}</div>
         ${s.medical_notes?'<div class="medical">⚕️ '+s.medical_notes+'</div>':''}
       </div>
       <div class="right"><span class="pill ${cls}">${lbl}</span></div>
     </div>`;
   }).join('') || '<div class="loading">No students yet — add one above!</div>';
+
+  // Pending Documents Tracker (PDF requirement)
+  const pending = STUDENTS.filter(s => !s.consent_given || !s.aadhaar_url || !s.photo_url);
+  document.getElementById('pending-card').style.display = pending.length ? 'block' : 'none';
+  document.getElementById('pending-list').innerHTML = pending.map(s=>`
+    <div class="srow">
+      <div><div class="name">${s.full_name}</div><div class="sm">${s.class_section} · 📞 ${s.parent_phone}</div></div>
+      <div class="right">
+        ${!s.consent_given?'<span class="pill bad">Consent</span> ':''}
+        ${!s.aadhaar_url?'<span class="pill warn">Aadhaar</span> ':''}
+        ${!s.photo_url?'<span class="pill warn">Photo</span>':''}
+      </div>
+    </div>`).join('');
 
   document.getElementById('att-count').textContent = STUDENTS.filter(s=>isPresent(s.id)).length + ' / ' + total;
   document.getElementById('att-list').innerHTML = STUDENTS.map(s=>{
@@ -361,6 +380,18 @@ function renderParent(){
       <span class="pill ${rcls}" style="font-size:13px;padding:6px 14px">${rlbl}</span>
       ${!s.consent_given ? `<button class="btn green" onclick="giveConsent('${s.id}')">📝 Give Digital Consent</button>
       <div class="sm" style="margin-top:8px">By tapping above, you give consent for your child to attend this trip.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
+    </div>
+    <div class="card">
+      <h3>📁 Documents Upload</h3>
+      <div class="srow">
+        <div><div class="name">📄 Aadhaar Card</div><div class="sm">${s.aadhaar_url?'<span style="color:#059669;font-weight:700">✅ Uploaded</span>':'<span style="color:#dc2626">❌ Not uploaded</span>'}</div></div>
+        <div class="right"><button class="btn small" onclick="pickDoc('${s.id}','aadhaar')">${s.aadhaar_url?'Re-upload':'Upload'}</button></div>
+      </div>
+      <div class="srow">
+        <div><div class="name">🖼️ Student Photo</div><div class="sm">${s.photo_url?'<span style="color:#059669;font-weight:700">✅ Uploaded</span>':'<span style="color:#dc2626">❌ Not uploaded</span>'}</div></div>
+        <div class="right"><button class="btn small" onclick="pickDoc('${s.id}','photo')">${s.photo_url?'Re-upload':'Upload'}</button></div>
+      </div>
+      <div class="sm" style="margin-top:8px">Photo ya PDF, max 5 MB</div>
     </div>
     <div class="card">
       <h3>💳 Fee Status</h3>
@@ -432,6 +463,33 @@ async function giveConsent(sid){
   if(error){ toast('❌ '+error.message); return; }
   toast('✅ Consent submitted — thank you!');
   loadAll();
+}
+
+let DOC_CTX = null;
+function pickDoc(sid, type){ DOC_CTX = { sid, type }; document.getElementById('doc-file').click(); }
+
+async function uploadDoc(ev){
+  const file = ev.target.files[0];
+  if(!file || !DOC_CTX) return;
+  if(file.size > 5*1024*1024){ toast('⚠️ File must be under 5 MB'); ev.target.value=''; return; }
+  toast('⏳ Uploading...');
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = DOC_CTX.sid + '/' + DOC_CTX.type + '.' + ext;
+  const { error } = await db.storage.from('documents').upload(path, file, { upsert: true });
+  if(error){ toast('❌ '+error.message); ev.target.value=''; return; }
+  const field = DOC_CTX.type === 'aadhaar' ? 'aadhaar_url' : 'photo_url';
+  const { error: e2 } = await db.from('students').update({ [field]: path }).eq('id', DOC_CTX.sid);
+  if(e2){ toast('❌ '+e2.message); ev.target.value=''; return; }
+  toast('✅ Document uploaded successfully!');
+  ev.target.value = '';
+  DOC_CTX = null;
+  loadAll();
+}
+
+async function viewDoc(path){
+  const { data, error } = await db.storage.from('documents').createSignedUrl(path, 3600);
+  if(error){ toast('❌ '+error.message); return; }
+  window.open(data.signedUrl, '_blank');
 }
 
 init();

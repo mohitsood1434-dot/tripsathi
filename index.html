@@ -65,13 +65,13 @@
   <div class="login-card">
     <h3 id="login-title" style="text-align:center;font-size:17px;margin-bottom:14px;">Login</h3>
     <label>Email</label>
-    <input id="l-email" type="email" placeholder="aapka@email.com">
+    <input id="l-email" type="email" placeholder="your@email.com">
     <label>Password</label>
     <input id="l-pass" type="password" placeholder="••••••••">
     <button class="btn" id="login-btn" onclick="doLogin()">Login</button>
     <button class="btn green" id="signup-btn" onclick="doSignup()" style="display:none">Create Account</button>
     <div class="err" id="login-err"></div>
-    <div class="switch-link" id="switch-link" onclick="toggleMode()">Naya parent account banana hai? Sign Up karo</div>
+    <div class="switch-link" id="switch-link" onclick="toggleMode()">New parent? Create an account</div>
   </div>
 </div>
 
@@ -99,7 +99,7 @@
     <div class="card">
       <h3>📢 Send Trip Update to Parents</h3>
       <button class="btn small" onclick="sendNotif('Bus departed from school 🚌')">🚌 Bus Departed</button>
-      <button class="btn small green" onclick="sendNotif('Reached safely, all students fine ✅')">✅ Reached Safely</button>
+      <button class="btn small green" onclick="sendNotif('Reached safely, all students are fine ✅')">✅ Reached Safely</button>
       <button class="btn small" style="background:#7c3aed" onclick="sendNotif('Dinner done, lights off at 10 PM 🌙')">🌙 Good Night</button>
     </div>
   </div>
@@ -112,7 +112,7 @@
       <label>Gender</label><select id="f-gender"><option value="M">Boy</option><option value="F">Girl</option></select>
       <label>Blood Group</label><select id="f-blood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
       <label>Parent Phone</label><input id="f-phone" placeholder="98xxxxxxxx">
-      <label>Parent Email (login ke liye — IMPORTANT)</label><input id="f-pemail" type="email" placeholder="parent@gmail.com">
+      <label>Parent Email (used for parent login — IMPORTANT)</label><input id="f-pemail" type="email" placeholder="parent@gmail.com">
       <label>Medical Notes (optional)</label><input id="f-medical" placeholder="e.g. Dust allergy">
       <button class="btn" onclick="addStudent()">Register Student</button>
     </div>
@@ -123,7 +123,7 @@
     <div class="card" style="text-align:center">
       <div style="font-size:28px;font-weight:800;color:#1e293b" id="att-count">–</div>
       <div class="sm" style="font-weight:600">Present — Departure Checkpoint</div>
-      <div class="sm" style="margin-top:6px">Naam pe tap karke mark karo 👇</div>
+      <div class="sm" style="margin-top:6px">Tap a name to mark present/absent 👇</div>
     </div>
     <div class="card" id="att-list"><div class="loading">Loading...</div></div>
   </div>
@@ -171,26 +171,26 @@ function toggleMode(){
   document.getElementById('login-title').textContent = signupMode ? 'Parent Sign Up' : 'Login';
   document.getElementById('login-btn').style.display = signupMode ? 'none' : 'block';
   document.getElementById('signup-btn').style.display = signupMode ? 'block' : 'none';
-  document.getElementById('switch-link').textContent = signupMode ? 'Account hai? Login karo' : 'Naya parent account banana hai? Sign Up karo';
+  document.getElementById('switch-link').textContent = signupMode ? 'Already have an account? Login' : 'New parent? Create an account';
   document.getElementById('login-err').textContent = '';
 }
 
 async function doLogin(){
   const email = document.getElementById('l-email').value.trim();
   const pass = document.getElementById('l-pass').value;
-  if(!email || !pass){ document.getElementById('login-err').textContent='Email aur password dono daalo'; return; }
+  if(!email || !pass){ document.getElementById('login-err').textContent='Please enter both email and password'; return; }
   const { error } = await db.auth.signInWithPassword({ email, password: pass });
-  if(error){ document.getElementById('login-err').textContent = 'Login fail: ' + error.message; return; }
+  if(error){ document.getElementById('login-err').textContent = 'Login failed: ' + error.message; return; }
   init();
 }
 
 async function doSignup(){
   const email = document.getElementById('l-email').value.trim();
   const pass = document.getElementById('l-pass').value;
-  if(!email || pass.length < 6){ document.getElementById('login-err').textContent='Email daalo aur password kam se kam 6 letters'; return; }
+  if(!email || pass.length < 6){ document.getElementById('login-err').textContent='Enter email and a password of at least 6 characters'; return; }
   const { error } = await db.auth.signUp({ email, password: pass });
-  if(error){ document.getElementById('login-err').textContent = 'Signup fail: ' + error.message; return; }
-  toast('✅ Account ban gaya!');
+  if(error){ document.getElementById('login-err').textContent = 'Signup failed: ' + error.message; return; }
+  toast('✅ Account created!');
   setTimeout(init, 500);
 }
 
@@ -209,7 +209,7 @@ async function init(){
   USER = session.user;
   const { data: prof } = await db.from('profiles').select('*').eq('id', USER.id).single();
   PROFILE = prof;
-  if(!PROFILE){ toast('Profile nahi mila, dobara login karo'); await db.auth.signOut(); location.reload(); return; }
+  if(!PROFILE){ toast('Profile not found, please login again'); await db.auth.signOut(); location.reload(); return; }
 
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
@@ -279,7 +279,7 @@ function renderAdmin(){
         ${s.medical_notes?'<div class="medical">⚕️ '+s.medical_notes+'</div>':''}
       </div>
       <div class="right"><span class="pill ${s.consent_given?'ok':'bad'}">${s.consent_given?'Consent ✓':'No consent'}</span></div>
-    </div>`).join('') || '<div class="loading">Koi student nahi</div>';
+    </div>`).join('') || '<div class="loading">No students yet — add one above!</div>';
 
   document.getElementById('att-count').textContent = STUDENTS.filter(s=>isPresent(s.id)).length + ' / ' + total;
   document.getElementById('att-list').innerHTML = STUDENTS.map(s=>{
@@ -287,7 +287,7 @@ function renderAdmin(){
     return `<div class="attrow" onclick="toggleAtt('${s.id}')">
       <div><div class="name">${s.full_name}</div><div class="sm">${s.class_section}</div></div>
       <div class="check ${pr?'present':'absent'}">${pr?'✅':'○'}</div></div>`;
-  }).join('') || '<div class="loading">Pehle students add karo</div>';
+  }).join('') || '<div class="loading">Add students first</div>';
 
   document.getElementById('p-student').innerHTML = STUDENTS.map(s=>`<option value="${s.id}">${s.full_name} (${s.class_section})</option>`).join('');
   document.getElementById('pay-list').innerHTML = STUDENTS.map(s=>{
@@ -301,7 +301,7 @@ function renderAdmin(){
 function renderParent(){
   const mine = STUDENTS;
   if(!mine.length){
-    document.getElementById('child-area').innerHTML = '<div class="card loading">Aapke email se koi student linked nahi hai.<br>School se sampark karein: apna email registration mein dilwayein.</div>';
+    document.getElementById('child-area').innerHTML = '<div class="card loading">No student is linked to your email yet.<br>Please contact the school to register your email.</div>';
     return;
   }
   document.getElementById('child-area').innerHTML = mine.map(s=>{
@@ -322,7 +322,7 @@ function renderParent(){
       <div class="srow"><div class="name">Total Fee</div><div class="right name">${fmt(FEE)}</div></div>
       <div class="srow"><div class="name" style="color:#059669">Paid</div><div class="right name" style="color:#059669">${fmt(paid)}</div></div>
       <div class="srow"><div class="name" style="color:#dc2626">Due</div><div class="right name" style="color:#dc2626">${fmt(due>0?due:0)}</div></div>
-      ${due>0?'<div class="sm" style="margin-top:8px">Payment school office mein ya class teacher ko dein.</div>':'<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Poori fees jama ho gayi — dhanyavaad! ✓</div>'}
+      ${due>0?'<div class="sm" style="margin-top:8px">Please pay at the school office or to the class teacher.</div>':'<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">All fees paid — thank you! ✓</div>'}
     </div>`;
   }).join('');
 }
@@ -331,7 +331,7 @@ async function loadNotifs(){
   const { data } = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(20);
   document.getElementById('notif-list').innerHTML = (data||[]).map(n=>`
     <div class="notif">${n.message}<div class="sm" style="margin-top:4px">${new Date(n.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</div></div>
-  `).join('') || '<div class="loading">Abhi koi update nahi</div>';
+  `).join('') || '<div class="loading">No updates yet</div>';
 }
 
 async function addStudent(){
@@ -339,7 +339,7 @@ async function addStudent(){
   const cls = document.getElementById('f-class').value.trim();
   const phone = document.getElementById('f-phone').value.trim();
   const pemail = document.getElementById('f-pemail').value.trim();
-  if(!name || !cls || !phone || !pemail){ toast('⚠️ Naam, class, phone aur parent email zaroori!'); return; }
+  if(!name || !cls || !phone || !pemail){ toast('⚠️ Name, class, phone and parent email are required!'); return; }
   const { error } = await db.from('students').insert({
     trip_id: TRIP.id, full_name: name, class_section: cls,
     gender: document.getElementById('f-gender').value,
@@ -350,7 +350,7 @@ async function addStudent(){
   });
   if(error){ toast('❌ '+error.message); return; }
   ['f-name','f-class','f-phone','f-pemail','f-medical'].forEach(i=>document.getElementById(i).value='');
-  toast('✅ '+name+' register ho gaya!');
+  toast('✅ '+name+' registered successfully!');
   loadAll();
 }
 
@@ -366,18 +366,18 @@ async function toggleAtt(sid){
 async function addPayment(){
   const sid = document.getElementById('p-student').value;
   const amt = Number(document.getElementById('p-amount').value);
-  if(!sid || !amt){ toast('⚠️ Student aur amount select karo'); return; }
+  if(!sid || !amt){ toast('⚠️ Please select a student and enter amount'); return; }
   const { error } = await db.from('payments').insert({ student_id:sid, amount:amt, payment_mode:document.getElementById('p-mode').value });
   if(error){ toast('❌ '+error.message); return; }
   document.getElementById('p-amount').value='';
-  toast('💰 Payment record ho gayi!');
+  toast('💰 Payment recorded!');
   loadAll();
 }
 
 async function sendNotif(msg){
   const { error } = await db.from('notifications').insert({ trip_id:TRIP.id, message:msg, sent_by:PROFILE.email });
   if(error){ toast('❌ '+error.message); return; }
-  toast('📢 Update sent!');
+  toast('📢 Update sent to parents!');
   loadNotifs();
 }
 

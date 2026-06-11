@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TripSathi — School Trip Management</title>
+<title>TripSathi — School Trip Management System</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; }
@@ -50,6 +50,8 @@
   .login-logo p { font-size:12px; opacity:.8; margin-top:4px; }
   .switch-link { text-align:center; font-size:13px; color:#1d4ed8; font-weight:700; margin-top:14px; cursor:pointer; }
   .err { color:#dc2626; font-size:12px; font-weight:600; margin-top:8px; text-align:center; }
+  .bus-ico { color:#fff !important; font-size:26px; vertical-align:middle; }
+  .login-footer { text-align:center; color:#fff; opacity:.7; font-size:11px; margin-top:28px; line-height:1.7; letter-spacing:.4px; font-weight:500; }
   #app { display:none; }
   .childcard { background:linear-gradient(135deg,#1e3a8a,#1d4ed8); color:#fff; border-radius:16px; padding:16px; margin-bottom:12px; }
   .chip { background:rgba(255,255,255,.2); padding:4px 8px; border-radius:8px; font-size:11px; margin-right:6px; }
@@ -59,8 +61,8 @@
 
 <div id="login-screen">
   <div class="login-logo">
-    <h1>Trip<span>Sathi</span></h1>
-    <p>Invictus International School — Trip Management</p>
+    <h1><span class="bus-ico">🚌</span> Trip<span>Sathi</span></h1>
+    <p>School Trip Management System</p>
   </div>
   <div class="login-card">
     <h3 id="login-title" style="text-align:center;font-size:17px;margin-bottom:14px;">Login</h3>
@@ -71,7 +73,11 @@
     <button class="btn" id="login-btn" onclick="doLogin()">Login</button>
     <button class="btn green" id="signup-btn" onclick="doSignup()" style="display:none">Create Account</button>
     <div class="err" id="login-err"></div>
-    <div class="switch-link" id="switch-link" onclick="toggleMode()">New parent? Create an account</div>
+    <div class="switch-link" id="switch-link" onclick="toggleMode()">New Parent? Register Here</div>
+  </div>
+  <div class="login-footer">
+    © 2026 TripSathi<br>
+    Designed &amp; Developed by Mohit Sood
   </div>
 </div>
 
@@ -95,6 +101,12 @@
       <div class="stat"><div class="v" id="st-paid">–</div><div class="l">Fees Collected</div></div>
       <div class="stat"><div class="v" id="st-consent">–</div><div class="l">Consent Done</div></div>
       <div class="stat"><div class="v" id="st-present">–</div><div class="l">Present (Departure)</div></div>
+      <div class="stat"><div class="v" id="st-ready" style="color:#059669">–</div><div class="l">🟢 Trip Ready</div></div>
+      <div class="stat"><div class="v" id="st-medical" style="color:#dc2626">–</div><div class="l">⚕️ Medical Cases</div></div>
+    </div>
+    <div class="card" id="medical-card" style="display:none">
+      <h3>⚕️ Medical Alert Dashboard</h3>
+      <div id="medical-list"></div>
     </div>
     <div class="card">
       <h3>📢 Send Trip Update to Parents</h3>
@@ -171,7 +183,7 @@ function toggleMode(){
   document.getElementById('login-title').textContent = signupMode ? 'Parent Sign Up' : 'Login';
   document.getElementById('login-btn').style.display = signupMode ? 'none' : 'block';
   document.getElementById('signup-btn').style.display = signupMode ? 'block' : 'none';
-  document.getElementById('switch-link').textContent = signupMode ? 'Already have an account? Login' : 'New parent? Create an account';
+  document.getElementById('switch-link').textContent = signupMode ? 'Already have an account? Login' : 'New Parent? Register Here';
   document.getElementById('login-err').textContent = '';
 }
 
@@ -251,6 +263,15 @@ async function loadAll(){
 function paidOf(id){ return PAYMENTS.filter(x=>x.student_id===id).reduce((s,x)=>s+Number(x.amount),0); }
 function isPresent(id){ return ATTENDANCE.some(x=>x.student_id===id && x.status==='present'); }
 
+// Student Readiness System (PDF requirement): Green = Ready, Yellow = Pending, Red = Not Eligible
+function readiness(s){
+  const fullyPaid = paidOf(s.id) >= FEE;
+  const consent = !!s.consent_given;
+  if(consent && fullyPaid) return ['ok','🟢 Ready'];
+  if(consent || paidOf(s.id) > 0) return ['warn','🟡 Pending'];
+  return ['bad','🔴 Not Eligible'];
+}
+
 function render(){
   if(PROFILE.role==='admin') renderAdmin(); else renderParent();
   loadNotifs();
@@ -268,18 +289,35 @@ function renderAdmin(){
   document.getElementById('st-paid').textContent = fmt(collected);
   document.getElementById('st-consent').textContent = STUDENTS.filter(s=>s.consent_given).length + '/' + total;
   document.getElementById('st-present').textContent = STUDENTS.filter(s=>isPresent(s.id)).length + '/' + total;
+  document.getElementById('st-ready').textContent = STUDENTS.filter(s=>readiness(s)[0]==='ok').length + '/' + total;
 
-  document.getElementById('student-list').innerHTML = STUDENTS.map(s=>`
+  const medCases = STUDENTS.filter(s=>s.medical_notes && s.medical_notes.trim());
+  document.getElementById('st-medical').textContent = medCases.length;
+  document.getElementById('medical-card').style.display = medCases.length ? 'block' : 'none';
+  document.getElementById('medical-list').innerHTML = medCases.map(s=>`
+    <div class="srow">
+      <div class="avatar" style="background:#dc2626">${initials(s.full_name)}</div>
+      <div>
+        <div class="name">${s.full_name} <span class="sm">(${s.class_section})</span></div>
+        <div class="medical">⚕️ ${s.medical_notes}</div>
+        <div class="sm">🩸 ${s.blood_group||'–'} · 📞 ${s.parent_phone}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('student-list').innerHTML = STUDENTS.map(s=>{
+    const [cls,lbl] = readiness(s);
+    return `
     <div class="srow">
       <div class="avatar" style="background:${s.gender==='F'?'#ec4899':'#3b82f6'}">${initials(s.full_name)}</div>
       <div>
         <div class="name">${s.full_name}</div>
         <div class="sm">${s.class_section} · ${s.blood_group||''} · 📞 ${s.parent_phone}</div>
-        <div class="sm">✉️ ${s.parent_email || '<span style="color:#dc2626">parent email missing!</span>'}</div>
+        <div class="sm">✉️ ${s.parent_email || '<span style="color:#dc2626">parent email missing!</span>'} · ${s.consent_given?'📝 Consent ✓':'📝 No consent'}</div>
         ${s.medical_notes?'<div class="medical">⚕️ '+s.medical_notes+'</div>':''}
       </div>
-      <div class="right"><span class="pill ${s.consent_given?'ok':'bad'}">${s.consent_given?'Consent ✓':'No consent'}</span></div>
-    </div>`).join('') || '<div class="loading">No students yet — add one above!</div>';
+      <div class="right"><span class="pill ${cls}">${lbl}</span></div>
+    </div>`;
+  }).join('') || '<div class="loading">No students yet — add one above!</div>';
 
   document.getElementById('att-count').textContent = STUDENTS.filter(s=>isPresent(s.id)).length + ' / ' + total;
   document.getElementById('att-list').innerHTML = STUDENTS.map(s=>{
@@ -306,6 +344,7 @@ function renderParent(){
   }
   document.getElementById('child-area').innerHTML = mine.map(s=>{
     const paid = paidOf(s.id), due = FEE - paid;
+    const [rcls,rlbl] = readiness(s);
     return `
     <div class="childcard">
       <div style="font-size:11px;opacity:.8">Your child</div>
@@ -316,6 +355,12 @@ function renderParent(){
         <span class="chip">${isPresent(s.id)?'✅ Present':'⏳ Not marked'}</span>
         <span class="chip">${s.consent_given?'📝 Consent ✓':'📝 Consent pending'}</span>
       </div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="sm" style="font-weight:700;margin-bottom:6px">Trip Readiness Status</div>
+      <span class="pill ${rcls}" style="font-size:13px;padding:6px 14px">${rlbl}</span>
+      ${!s.consent_given ? `<button class="btn green" onclick="giveConsent('${s.id}')">📝 Give Digital Consent</button>
+      <div class="sm" style="margin-top:8px">By tapping above, you give consent for your child to attend this trip.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
     </div>
     <div class="card">
       <h3>💳 Fee Status</h3>
@@ -379,6 +424,14 @@ async function sendNotif(msg){
   if(error){ toast('❌ '+error.message); return; }
   toast('📢 Update sent to parents!');
   loadNotifs();
+}
+
+async function giveConsent(sid){
+  if(!confirm('I give my consent for my child to attend this school trip. Confirm?')) return;
+  const { error } = await db.from('students').update({ consent_given: true, consent_at: new Date().toISOString() }).eq('id', sid);
+  if(error){ toast('❌ '+error.message); return; }
+  toast('✅ Consent submitted — thank you!');
+  loadAll();
 }
 
 init();

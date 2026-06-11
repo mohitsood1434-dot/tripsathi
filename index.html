@@ -24,7 +24,8 @@
   .stat .l { font-size:11px; color:#64748b; font-weight:600; }
   .btn { background:#1d4ed8; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:700; font-size:14px; width:100%; cursor:pointer; margin-top:8px; }
   .btn:active { transform:scale(.97); }
-  .btn.green { background:#059669; } .btn.small { width:auto; padding:7px 12px; font-size:12px; margin:0; }
+  .btn.green { background:#059669; } .btn.orange { background:#d97706; }
+  .btn.small { width:auto; padding:7px 12px; font-size:12px; margin:0; }
   input, select { width:100%; padding:11px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:14px; margin-top:6px; margin-bottom:10px; background:#fff; }
   label { font-size:12px; font-weight:700; color:#475569; }
   .srow { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
@@ -34,6 +35,7 @@
   .name { font-size:14px; font-weight:700; color:#1e293b; }
   .pill { font-size:10px; font-weight:800; padding:3px 8px; border-radius:99px; }
   .ok { background:#d1fae5; color:#047857; } .bad { background:#fee2e2; color:#dc2626; } .warn { background:#fef3c7; color:#b45309; }
+  .info { background:#dbeafe; color:#1e40af; }
   .right { margin-left:auto; text-align:right; }
   h3 { font-size:14px; color:#334155; margin-bottom:10px; }
   .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 18px; border-radius:14px; font-size:13px; font-weight:600; z-index:99; display:none; max-width:90%; text-align:center; }
@@ -55,6 +57,12 @@
   #app { display:none; }
   .childcard { background:linear-gradient(135deg,#1e3a8a,#1d4ed8); color:#fff; border-radius:16px; padding:16px; margin-bottom:12px; }
   .chip { background:rgba(255,255,255,.2); padding:4px 8px; border-radius:8px; font-size:11px; margin-right:6px; }
+  /* Bus page styles */
+  .bus-card { background:#fff; border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.05); border-left:4px solid #1d4ed8; }
+  .bus-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .bus-number { font-size:16px; font-weight:800; color:#1e3a8a; }
+  .bus-meta { font-size:11px; color:#64748b; }
+  .seat-badge { background:#1e3a8a; color:#fff; font-size:11px; font-weight:800; padding:3px 8px; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -90,6 +98,7 @@
     <button class="logout" onclick="doLogout()">Logout</button>
   </div>
 
+  <!-- ADMIN PAGES -->
   <div class="page" id="page-dash">
     <div class="card" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;">
       <div style="font-size:11px;opacity:.8" id="trip-dest"></div>
@@ -120,7 +129,7 @@
     <div class="card">
       <h3>➕ New Student Registration</h3>
       <label>Student Name</label><input id="f-name" placeholder="e.g. Rohan Verma">
-      <label>Class & Section</label><input id="f-class" placeholder="e.g. VIII-A">
+      <label>Class &amp; Section</label><input id="f-class" placeholder="e.g. VIII-A">
       <label>Gender</label><select id="f-gender"><option value="M">Boy</option><option value="F">Girl</option></select>
       <label>Blood Group</label><select id="f-blood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
       <label>Parent Phone</label><input id="f-phone" placeholder="98xxxxxxxx">
@@ -155,13 +164,44 @@
     <div class="card"><h3>📒 Payment Status (Fee: ₹15,000)</h3><div id="pay-list" class="loading">Loading...</div></div>
   </div>
 
-  <div class="page" id="page-mychild">
-    <div id="child-area" class="loading">Loading...</div>
+  <!-- BUS ALLOCATION PAGE (Admin) -->
+  <div class="page" id="page-buses">
+    <!-- Section 1: Add Bus -->
+    <div class="card">
+      <h3>🚌 Add New Bus</h3>
+      <label>Bus Number</label><input id="b-num" placeholder="e.g. HR 26 AB 1234">
+      <label>Driver Name</label><input id="b-driver" placeholder="e.g. Ramesh Kumar">
+      <label>Driver Phone</label><input id="b-dphone" placeholder="98xxxxxxxx">
+      <label>Teacher In-charge</label><input id="b-teacher" placeholder="e.g. Ms. Priya Sharma">
+      <label>Seating Capacity</label><input id="b-cap" type="number" placeholder="40" value="40">
+      <button class="btn" onclick="addBus()">➕ Add Bus</button>
+    </div>
+
+    <!-- Section 2: Assign Student to Bus -->
+    <div class="card">
+      <h3>🪑 Assign Student to Bus</h3>
+      <label>Select Student</label>
+      <select id="ba-student"></select>
+      <label>Select Bus</label>
+      <select id="ba-bus"></select>
+      <label>Seat Number</label>
+      <input id="ba-seat" placeholder="e.g. 12 or A-12">
+      <button class="btn orange" onclick="assignBus()">✅ Save Allocation</button>
+    </div>
+
+    <!-- Section 3: Bus-wise Student List -->
+    <div id="bus-alloc-list"><div class="loading">Loading buses...</div></div>
   </div>
 
+  <!-- NOTIFICATIONS PAGE -->
   <div class="page" id="page-notif">
     <h3 style="margin-bottom:10px">🔔 Trip Updates</h3>
     <div id="notif-list" class="loading">Loading...</div>
+  </div>
+
+  <!-- PARENT PAGES -->
+  <div class="page" id="page-mychild">
+    <div id="child-area" class="loading">Loading...</div>
   </div>
 
   <div class="tabs" id="tabbar"></div>
@@ -176,12 +216,15 @@ const SUPABASE_KEY = "sb_publishable_VuNw4m4HEKbCogIrUOx-Kw_wGVjBf8z";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const FEE = 15000;
-let USER = null, PROFILE = null, TRIP = null, STUDENTS = [], PAYMENTS = [], ATTENDANCE = [];
+let USER = null, PROFILE = null, TRIP = null;
+let STUDENTS = [], PAYMENTS = [], ATTENDANCE = [], BUSES = [];
 let signupMode = false;
 
-function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2800); }
 const fmt = n => '₹'+Number(n).toLocaleString('en-IN');
 const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
 
 function toggleMode(){
   signupMode = !signupMode;
@@ -216,9 +259,11 @@ async function doLogout(){
   location.reload();
 }
 
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
 async function init(){
   const { data: { session } } = await db.auth.getSession();
-  if(!session){ 
+  if(!session){
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app').style.display='none';
     return;
@@ -239,10 +284,21 @@ async function init(){
 function buildTabs(){
   const isAdmin = PROFILE.role==='admin';
   const tabs = isAdmin
-    ? [['dash','🏠','Home'],['students','👨‍🎓','Students'],['att','✅','Attendance'],['pay','💳','Payments'],['notif','🔔','Updates']]
-    : [['mychild','👧','My Child'],['notif','🔔','Updates']];
+    ? [
+        ['dash',   '🏠', 'Home'],
+        ['students','👨‍🎓','Students'],
+        ['att',    '✅', 'Attendance'],
+        ['pay',    '💳', 'Payments'],
+        ['buses',  '🚌', 'Buses'],
+        ['notif',  '🔔', 'Updates']
+      ]
+    : [
+        ['mychild','👧','My Child'],
+        ['notif',  '🔔','Updates']
+      ];
   document.getElementById('tabbar').innerHTML = tabs.map(([id,ico,label],i)=>
-    `<button class="tab ${i===0?'active':''}" onclick="go('${id}',this)"><span class="ico">${ico}</span>${label}</button>`).join('');
+    `<button class="tab ${i===0?'active':''}" onclick="go('${id}',this)"><span class="ico">${ico}</span>${label}</button>`
+  ).join('');
   go(tabs[0][0], document.querySelector('.tab'));
 }
 
@@ -253,29 +309,39 @@ function go(p, el){
   if(el) el.classList.add('active');
 }
 
+// ─── LOAD DATA ───────────────────────────────────────────────────────────────
+
 async function loadAll(){
   const { data: trips } = await db.from('trips').select('*').limit(1);
   TRIP = trips && trips[0];
-  const { data: s } = await db.from('students').select('*').order('full_name');
+
+  const { data: s } = await db.from('students').select('*, buses(bus_number, driver_name, driver_phone, teacher_incharge)').order('full_name');
   STUDENTS = s || [];
+
   const { data: p } = await db.from('payments').select('*');
   PAYMENTS = p || [];
+
   const { data: a } = await db.from('attendance').select('*').eq('checkpoint','departure');
   ATTENDANCE = a || [];
+
+  const { data: b } = await db.from('buses').select('*').order('bus_number');
+  BUSES = b || [];
+
   render();
 }
 
 function paidOf(id){ return PAYMENTS.filter(x=>x.student_id===id).reduce((s,x)=>s+Number(x.amount),0); }
 function isPresent(id){ return ATTENDANCE.some(x=>x.student_id===id && x.status==='present'); }
 
-// Student Readiness System: auto-check Consent + Payment + Aadhaar
 function readiness(s){
   const checks = [ !!s.consent_given, paidOf(s.id) >= FEE, !!s.aadhaar_url ];
   const done = checks.filter(Boolean).length;
   if(done === 3) return ['ok','🟢 Ready'];
-  if(done > 0) return ['warn','🟡 Pending'];
+  if(done > 0)   return ['warn','🟡 Pending'];
   return ['bad','🔴 Not Eligible'];
 }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
 
 function render(){
   if(PROFILE.role==='admin') renderAdmin(); else renderParent();
@@ -283,6 +349,7 @@ function render(){
 }
 
 function renderAdmin(){
+  // Dashboard
   if(TRIP){
     document.getElementById('trip-name').textContent = TRIP.name;
     document.getElementById('trip-dest').textContent = '📍 ' + TRIP.destination;
@@ -309,8 +376,10 @@ function renderAdmin(){
       </div>
     </div>`).join('');
 
+  // Students list
   document.getElementById('student-list').innerHTML = STUDENTS.map(s=>{
     const [cls,lbl] = readiness(s);
+    const busInfo = s.buses ? `🚌 Bus ${s.buses.bus_number}${s.seat_number?' · Seat '+s.seat_number:''}` : '🚌 Bus not assigned';
     return `
     <div class="srow">
       <div class="avatar" style="background:${s.gender==='F'?'#ec4899':'#3b82f6'}">${initials(s.full_name)}</div>
@@ -319,6 +388,7 @@ function renderAdmin(){
         <div class="sm">${s.class_section} · ${s.blood_group||''} · 📞 ${s.parent_phone}</div>
         <div class="sm">✉️ ${s.parent_email || '<span style="color:#dc2626">parent email missing!</span>'} · ${s.consent_given?'📝 Consent ✓':'📝 No consent'}</div>
         <div class="sm">${s.aadhaar_url?`<a onclick="viewDoc('${s.aadhaar_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📄 View Aadhaar</a>`:'📄 Aadhaar ✗'} · ${s.consent_url?`<a onclick="viewDoc('${s.consent_url}')" style="color:#1d4ed8;font-weight:700;cursor:pointer">📝 View Consent Form</a>`:'📝 Consent Form ✗'}</div>
+        <div class="sm" style="color:#1e3a8a;font-weight:600">${busInfo}</div>
         ${s.medical_notes?'<div class="medical">⚕️ '+s.medical_notes+'</div>':''}
       </div>
       <div class="right"><span class="pill ${cls}">${lbl}</span></div>
@@ -337,6 +407,7 @@ function renderAdmin(){
       </div>
     </div>`).join('');
 
+  // Attendance
   document.getElementById('att-count').textContent = STUDENTS.filter(s=>isPresent(s.id)).length + ' / ' + total;
   document.getElementById('att-list').innerHTML = STUDENTS.map(s=>{
     const pr = isPresent(s.id);
@@ -345,6 +416,7 @@ function renderAdmin(){
       <div class="check ${pr?'present':'absent'}">${pr?'✅':'○'}</div></div>`;
   }).join('') || '<div class="loading">Add students first</div>';
 
+  // Payments
   document.getElementById('p-student').innerHTML = STUDENTS.map(s=>`<option value="${s.id}">${s.full_name} (${s.class_section})</option>`).join('');
   document.getElementById('pay-list').innerHTML = STUDENTS.map(s=>{
     const paid = paidOf(s.id), due = FEE - paid;
@@ -352,7 +424,137 @@ function renderAdmin(){
       <div><div class="name">${s.full_name}</div><div class="sm">Paid: ${fmt(paid)}</div></div>
       <div class="right"><span class="pill ${due<=0?'ok':(paid>0?'warn':'bad')}">${due<=0?'Fully Paid ✓':'Due '+fmt(due)}</span></div></div>`;
   }).join('') || '<div class="loading">—</div>';
+
+  // Buses Page
+  renderBusPage();
 }
+
+// ─── BUS ALLOCATION ──────────────────────────────────────────────────────────
+
+function renderBusPage(){
+  // Populate student dropdown (unassigned students first)
+  const unassigned = STUDENTS.filter(s => !s.bus_id);
+  const assigned = STUDENTS.filter(s => s.bus_id);
+  const allOpts = [
+    ...unassigned.map(s=>`<option value="${s.id}">⚪ ${s.full_name} (${s.class_section})</option>`),
+    ...assigned.map(s=>`<option value="${s.id}">🟢 ${s.full_name} (${s.class_section}) — Bus ${s.buses?.bus_number||'?'}</option>`)
+  ];
+  document.getElementById('ba-student').innerHTML = allOpts.join('') || '<option>No students</option>';
+
+  // Populate bus dropdown
+  document.getElementById('ba-bus').innerHTML = BUSES.map(b=>{
+    const count = STUDENTS.filter(s=>s.bus_id===b.id).length;
+    return `<option value="${b.id}">Bus ${b.bus_number} (${count}/${b.capacity} seats)</option>`;
+  }).join('') || '<option value="">— Add a bus first —</option>';
+
+  // Bus-wise student list
+  if(!BUSES.length){
+    document.getElementById('bus-alloc-list').innerHTML = '<div class="loading">Koi bus nahi hai abhi. Upar add karo.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // Unassigned students card
+  if(unassigned.length){
+    html += `<div class="card" style="border-left:4px solid #dc2626">
+      <h3>⚠️ Unassigned Students (${unassigned.length})</h3>
+      ${unassigned.map(s=>`
+        <div class="srow">
+          <div class="avatar" style="background:${s.gender==='F'?'#ec4899':'#3b82f6'}">${initials(s.full_name)}</div>
+          <div><div class="name">${s.full_name}</div><div class="sm">${s.class_section}</div></div>
+          <span class="pill bad">No Bus</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // Each bus card
+  BUSES.forEach(b => {
+    const onBus = STUDENTS.filter(s => s.bus_id === b.id).sort((a,b)=>(a.seat_number||'').localeCompare(b.seat_number||''));
+    const fill = onBus.length;
+    const pct = Math.round((fill / b.capacity) * 100);
+    const fillColor = pct >= 90 ? '#dc2626' : pct >= 70 ? '#d97706' : '#059669';
+
+    html += `
+    <div class="bus-card">
+      <div class="bus-header">
+        <div>
+          <div class="bus-number">🚌 Bus — ${b.bus_number}</div>
+          <div class="bus-meta">👨‍✈️ ${b.driver_name||'—'} · 📞 ${b.driver_phone||'—'}</div>
+          <div class="bus-meta">👩‍🏫 Teacher: ${b.teacher_incharge||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:${fillColor}">${fill}/${b.capacity}</div>
+          <div class="bus-meta">seats filled</div>
+        </div>
+      </div>
+      <div style="height:6px;background:#f1f5f9;border-radius:99px;margin:8px 0">
+        <div style="height:6px;background:${fillColor};border-radius:99px;width:${pct}%"></div>
+      </div>
+      ${onBus.length ? onBus.map(s=>`
+        <div class="srow">
+          <div class="avatar" style="background:${s.gender==='F'?'#ec4899':'#3b82f6'};width:30px;height:30px;font-size:11px">${initials(s.full_name)}</div>
+          <div><div class="name" style="font-size:13px">${s.full_name}</div><div class="sm">${s.class_section}</div></div>
+          <div class="right">
+            ${s.seat_number ? `<span class="seat-badge">Seat ${s.seat_number}</span>` : '<span class="pill warn">No Seat</span>'}
+            <button class="btn small" style="background:#dc2626;margin-top:4px" onclick="removeBusAlloc('${s.id}')">✕</button>
+          </div>
+        </div>`).join('') : '<div class="sm" style="padding:8px 0">No students assigned yet</div>'}
+    </div>`;
+  });
+
+  document.getElementById('bus-alloc-list').innerHTML = html;
+}
+
+async function addBus(){
+  const num = document.getElementById('b-num').value.trim();
+  if(!num){ toast('⚠️ Bus number required!'); return; }
+  if(!TRIP){ toast('⚠️ No trip found!'); return; }
+  const { error } = await db.from('buses').insert({
+    trip_id: TRIP.id,
+    bus_number: num,
+    driver_name: document.getElementById('b-driver').value.trim(),
+    driver_phone: document.getElementById('b-dphone').value.trim(),
+    teacher_incharge: document.getElementById('b-teacher').value.trim(),
+    capacity: parseInt(document.getElementById('b-cap').value) || 40
+  });
+  if(error){ toast('❌ '+error.message); return; }
+  ['b-num','b-driver','b-dphone','b-teacher'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('b-cap').value='40';
+  toast('🚌 Bus added successfully!');
+  loadAll();
+}
+
+async function assignBus(){
+  const sid = document.getElementById('ba-student').value;
+  const bid = document.getElementById('ba-bus').value;
+  const seat = document.getElementById('ba-seat').value.trim();
+  if(!sid || !bid){ toast('⚠️ Student aur bus dono select karo!'); return; }
+
+  // Check capacity
+  const bus = BUSES.find(b=>b.id===bid);
+  const current = STUDENTS.filter(s=>s.bus_id===bid).length;
+  const isReassign = STUDENTS.find(s=>s.id===sid)?.bus_id === bid;
+  if(!isReassign && bus && current >= bus.capacity){
+    toast(`⚠️ Bus ${bus.bus_number} full hai! (${bus.capacity}/${bus.capacity} seats)`);
+    return;
+  }
+
+  const { error } = await db.from('students').update({ bus_id: bid, seat_number: seat || null }).eq('id', sid);
+  if(error){ toast('❌ '+error.message); return; }
+  document.getElementById('ba-seat').value='';
+  toast('✅ Bus allocation saved!');
+  loadAll();
+}
+
+async function removeBusAlloc(sid){
+  const { error } = await db.from('students').update({ bus_id: null, seat_number: null }).eq('id', sid);
+  if(error){ toast('❌ '+error.message); return; }
+  toast('🗑️ Allocation removed');
+  loadAll();
+}
+
+// ─── PARENT VIEW ─────────────────────────────────────────────────────────────
 
 function renderParent(){
   const mine = STUDENTS;
@@ -363,6 +565,20 @@ function renderParent(){
   document.getElementById('child-area').innerHTML = mine.map(s=>{
     const paid = paidOf(s.id), due = FEE - paid;
     const [rcls,rlbl] = readiness(s);
+    // Bus info for parent
+    const busBlock = s.buses
+      ? `<div class="card" style="border-left:4px solid #1d4ed8">
+          <h3>🚌 Bus Details</h3>
+          <div class="srow"><div class="name">Bus Number</div><div class="right"><span class="pill info">${s.buses.bus_number}</span></div></div>
+          ${s.seat_number?`<div class="srow"><div class="name">Seat Number</div><div class="right"><span class="seat-badge">Seat ${s.seat_number}</span></div></div>`:''}
+          ${s.buses.driver_name?`<div class="srow"><div class="name">Driver</div><div class="right sm">${s.buses.driver_name}${s.buses.driver_phone?' · 📞 '+s.buses.driver_phone:''}</div></div>`:''}
+          ${s.buses.teacher_incharge?`<div class="srow"><div class="name">Teacher In-charge</div><div class="right sm">${s.buses.teacher_incharge}</div></div>`:''}
+        </div>`
+      : `<div class="card" style="border-left:4px solid #94a3b8">
+          <h3>🚌 Bus Details</h3>
+          <div class="sm" style="padding:8px 0">Bus allocation abhi nahi hui hai. School se confirm karein.</div>
+        </div>`;
+
     return `
     <div class="childcard">
       <div style="font-size:11px;opacity:.8">Your child</div>
@@ -372,6 +588,7 @@ function renderParent(){
         <span class="chip">🩸 ${s.blood_group||'–'}</span>
         <span class="chip">${isPresent(s.id)?'✅ Present':'⏳ Not marked'}</span>
         <span class="chip">${s.consent_given?'📝 Consent ✓':'📝 Consent pending'}</span>
+        ${s.buses?`<span class="chip">🚌 Bus ${s.buses.bus_number}</span>`:''}
       </div>
     </div>
     <div class="card" style="text-align:center">
@@ -380,6 +597,7 @@ function renderParent(){
       ${!s.consent_given ? `<button class="btn" onclick="printConsent('${s.id}')">🖨️ Print Consent Form</button>
       <div class="sm" style="margin-top:8px">Print karein, sign karein, phir neeche photo upload karein.</div>` : `<div class="sm" style="margin-top:8px;color:#059669;font-weight:700">Consent submitted ✓</div>`}
     </div>
+    ${busBlock}
     <div class="card">
       <h3>📁 Documents Upload</h3>
       <div class="srow">
@@ -402,12 +620,47 @@ function renderParent(){
   }).join('');
 }
 
+// ─── ATTENDANCE ──────────────────────────────────────────────────────────────
+
+async function toggleAtt(sid){
+  if(isPresent(sid)){
+    await db.from('attendance').delete().eq('student_id',sid).eq('checkpoint','departure');
+  } else {
+    await db.from('attendance').insert({ student_id:sid, trip_id:TRIP.id, checkpoint:'departure', status:'present', marked_by:PROFILE.email });
+  }
+  loadAll();
+}
+
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+
+async function addPayment(){
+  const sid = document.getElementById('p-student').value;
+  const amt = Number(document.getElementById('p-amount').value);
+  if(!sid || !amt){ toast('⚠️ Please select a student and enter amount'); return; }
+  const { error } = await db.from('payments').insert({ student_id:sid, amount:amt, payment_mode:document.getElementById('p-mode').value });
+  if(error){ toast('❌ '+error.message); return; }
+  document.getElementById('p-amount').value='';
+  toast('💰 Payment recorded!');
+  loadAll();
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+
+async function sendNotif(msg){
+  const { error } = await db.from('notifications').insert({ trip_id:TRIP.id, message:msg, sent_by:PROFILE.email });
+  if(error){ toast('❌ '+error.message); return; }
+  toast('📢 Update sent to parents!');
+  loadNotifs();
+}
+
 async function loadNotifs(){
   const { data } = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(20);
   document.getElementById('notif-list').innerHTML = (data||[]).map(n=>`
     <div class="notif">${n.message}<div class="sm" style="margin-top:4px">${new Date(n.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</div></div>
   `).join('') || '<div class="loading">No updates yet</div>';
 }
+
+// ─── STUDENTS ────────────────────────────────────────────────────────────────
 
 async function addStudent(){
   const name = document.getElementById('f-name').value.trim();
@@ -429,32 +682,7 @@ async function addStudent(){
   loadAll();
 }
 
-async function toggleAtt(sid){
-  if(isPresent(sid)){
-    await db.from('attendance').delete().eq('student_id',sid).eq('checkpoint','departure');
-  } else {
-    await db.from('attendance').insert({ student_id:sid, trip_id:TRIP.id, checkpoint:'departure', status:'present', marked_by:PROFILE.email });
-  }
-  loadAll();
-}
-
-async function addPayment(){
-  const sid = document.getElementById('p-student').value;
-  const amt = Number(document.getElementById('p-amount').value);
-  if(!sid || !amt){ toast('⚠️ Please select a student and enter amount'); return; }
-  const { error } = await db.from('payments').insert({ student_id:sid, amount:amt, payment_mode:document.getElementById('p-mode').value });
-  if(error){ toast('❌ '+error.message); return; }
-  document.getElementById('p-amount').value='';
-  toast('💰 Payment recorded!');
-  loadAll();
-}
-
-async function sendNotif(msg){
-  const { error } = await db.from('notifications').insert({ trip_id:TRIP.id, message:msg, sent_by:PROFILE.email });
-  if(error){ toast('❌ '+error.message); return; }
-  toast('📢 Update sent to parents!');
-  loadNotifs();
-}
+// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
 
 function printConsent(sid){
   const s = STUDENTS.find(x=>x.id===sid);

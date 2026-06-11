@@ -562,7 +562,10 @@ async function removeBusAlloc(sid){
 // ─── PARENT VIEW ─────────────────────────────────────────────────────────────
 
 function renderParent(){
-  const mine = STUDENTS;
+  const mine = STUDENTS.filter(
+  s => s.parent_email &&
+  s.parent_email.toLowerCase() === PROFILE.email.toLowerCase()
+);
   if(!mine.length){
     document.getElementById('child-area').innerHTML = '<div class="card loading">No student is linked to your email yet.<br>Please contact the school to register your email.</div>';
     return;
